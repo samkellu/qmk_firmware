@@ -52,6 +52,13 @@ typedef struct wall {
   enum texture tex;
 } wall;
 
+
+typedef struct controls {
+  bool l;
+  bool r;
+  bool f;
+  bool shoot;
+} controls;
 // Initializes walls
 const wall walls[] PROGMEM = {
     {{{10, 10}, {10, 120}}, CHECK},
@@ -185,7 +192,7 @@ float dist2(vec2 v, vec2 u);
 
 void doom_setup(void);
 
-void doom_update(bool l, bool r, bool f, bool shoot);
+void doom_update(controls c);
 
 void raycast(vec2 p, int pa, bool show_flash);
 

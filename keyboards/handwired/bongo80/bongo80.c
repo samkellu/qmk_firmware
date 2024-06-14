@@ -54,12 +54,12 @@ void doom_setup(void) {
     */
 }
 
-void doom_update(bool l, bool r, bool f, bool shoot) {
+void doom_update(controls c) {
 
     //if (timer_elapsed(game_time) < START_TIME_MILLI) return;
 
     oled_clear();
-    if (shoot && shot_timer == 0) {
+    if (c.shoot && shot_timer == 0) {
         shot_timer = 5;
     }
 
@@ -67,15 +67,15 @@ void doom_update(bool l, bool r, bool f, bool shoot) {
         shot_timer--;
     }
 
-    if (l) {
+    if (c.l) {
         pa = (pa - rotSpeed < 0 ? pa - rotSpeed + 360 : pa - rotSpeed);
     }
 
-    if (r) {
+    if (c.r) {
         pa = (pa + rotSpeed >= 360 ? pa + rotSpeed - 360 : pa + rotSpeed);
     }
 
-    if (f) {
+    if (c.f) {
         vec2 pn = {p.x + 2 * cos(pa * (PI / 180)), p.y + 2 * sin(pa * (PI / 180))};
         if (!collision_detection(pn)) {
             p = pn;
@@ -88,18 +88,15 @@ void doom_update(bool l, bool r, bool f, bool shoot) {
 
     // Displays the current game time
     oled_set_cursor(1, 7);
-    oled_write_P(PSTR("TIME: "), false);
-    oled_write(get_u16_str((uint16_t) (timer_elapsed(game_time) - START_TIME_MILLI) / 1000, ' '), false);
+    oled_write_P(PSTR("TIME:"), false);
+    oled_write(get_u8_str((timer_elapsed(game_time) - START_TIME_MILLI) / 1000, ' '), false);
 
     // Displays the players current score
-    oled_set_cursor(10, 7);
-    oled_write_P(PSTR("SCORE: "), false);
+    oled_set_cursor(12, 7);
+    oled_write_P(PSTR("SCORE:"), false);
     oled_write(get_u8_str(score, ' '), false);
 
-    // Runs the raycasting function if any input has been detected
-    if (f || l || r) {
-        raycast(p, pa, shot_timer > 0);
-    }
+    raycast(p, pa, shot_timer > 0);
 }
 
 // Runs a pseudo-3D raycasting algorithm on the environment around the player
@@ -284,6 +281,8 @@ static uint8_t curr_wpm = 0;
 led_t led_usb_state;
 enum oled_state screen_mode = OFF;
 
+controls doom_inputs = {0, 0, 0, 0};
+
 static void render_wpm(void) {
 
     // Writes the WPM to the screen, and caps if enabled
@@ -339,7 +338,28 @@ static void render_bongocat(void) {
 
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     
-    if (!process_record_user(keycode, record)) {
+    if (screen_mode == DOOM) {
+        switch (keycode) {
+            case KC_UP:
+                doom_inputs.f = record->event.pressed;
+                return false;
+
+            case KC_LEFT:
+                doom_inputs.l = record->event.pressed;
+                return false;
+
+
+            case KC_RIGHT:
+                doom_inputs.r = record->event.pressed;
+                return false;
+
+
+            case KC_SPC:
+                doom_inputs.shoot = record->event.pressed;
+                return false;
+        }
+
+    } else if (!process_record_user(keycode, record)) {
         return false;
     }
 
@@ -385,7 +405,7 @@ bool oled_task_kb(void) {
         case DOOM:
             if (timer_elapsed(frame_time) > FRAME_TIME_MILLI) {
                 frame_time = timer_read();
-                doom_update(false, true, true, false);
+                doom_update(doom_inputs);
             }
             break;
         
