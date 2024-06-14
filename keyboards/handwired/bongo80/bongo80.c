@@ -15,45 +15,17 @@
  */
 
 #include "bongo80.h"
+#include "doom.h"
 
 #ifdef OLED_ENABLE
 
-// Animation frame sequences
-const char* idle_no_caps[] = {idle_0, idle_0, idle_0, idle_0, idle_1, idle_2, idle_1, idle_0};
-const char* slow_no_caps[] = {idle_0, both_down, idle_0};
-const char* med_no_caps[]  = {left_down, idle_0, both_down, idle_0, right_down, idle_0};
-const char* fast_no_caps[] = {left_down, right_down};
 
-const char* idle_caps[] = {idle_0_open, idle_0_open, idle_0_open, idle_0_open, idle_1_open, idle_2_open, idle_1_open, idle_0_open};
-const char* slow_caps[] = {idle_0_open, both_down_open, idle_0_open};
-const char* med_caps[]  = {left_down_open, idle_0_open, both_down_open, idle_0_open, right_down_open, idle_0_open};
-const char* fast_caps[] = {left_down_open, right_down_open};
-
-// size of a singular frame in the animation
-const size_t frame_size = sizeof(idle_0);
-
-// Framesets for each typing state
-const struct frame_set no_caps[] = {
-    {.frames = idle_no_caps, .size = sizeof(idle_no_caps)/sizeof(char*), .frame_len = FRAME_LENGTH_SLOW},
-    {.frames = slow_no_caps, .size = sizeof(slow_no_caps)/sizeof(char*), .frame_len = FRAME_LENGTH_SLOW},
-    {.frames = med_no_caps,  .size = sizeof(med_no_caps)/sizeof(char*),  .frame_len = FRAME_LENGTH_MED},
-    {.frames = fast_no_caps, .size = sizeof(fast_no_caps)/sizeof(char*), .frame_len = FRAME_LENGTH_FAST}
-};
-
-const struct frame_set caps[] = {
-    {.frames = idle_caps, .size = sizeof(idle_caps)/sizeof(char*), .frame_len = FRAME_LENGTH_SLOW},
-    {.frames = slow_caps, .size = sizeof(slow_caps)/sizeof(char*), .frame_len = FRAME_LENGTH_SLOW},
-    {.frames = med_caps,  .size = sizeof(med_caps)/sizeof(char*),  .frame_len = FRAME_LENGTH_MED},
-    {.frames = fast_caps, .size = sizeof(fast_caps)/sizeof(char*), .frame_len = FRAME_LENGTH_FAST}
-};
-
-const struct frame_set* frame_sets[] = {no_caps, caps};
 uint8_t curr_frame_index = 0;
 uint8_t frame_set_index = 0;
 
 static uint8_t curr_wpm = 0;
 led_t led_usb_state;
-bool run_oled = 1;
+oled_state screen_mode = OFF;
 uint32_t time = 0;
 
 static void render_wpm(void) {
@@ -62,10 +34,10 @@ static void render_wpm(void) {
     oled_set_cursor(0, 7);
     oled_write_P(PSTR("WPM:"), false);
     oled_write(get_u8_str(curr_wpm, ' '), false);
-
     oled_set_cursor(17, 0);
     if (led_usb_state.caps_lock) {
         oled_write_P(PSTR("CAPS"), false);
+
     } else {
         oled_write_P(PSTR("    "), false);
     }
@@ -119,9 +91,23 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         // Handles the keycode for turning on and off the oled screen
         case KC_OLED_STATE:
             if (record->event.pressed) {
-                run_oled = !run_oled;
+                switch (screen_mode) {
+                    case OFF:
+                        screen_mode = CAT;
+                        break;
+
+                    case CAT:
+                        screen_mode = DOOM;
+                        break;
+
+                    case DOOM:
+                        screen_mode = OFF;
+                        break
+                }
+
                 oled_clear();
             }
+
             return false;
     }
     return true;
@@ -129,16 +115,21 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
 
 bool oled_task_kb(void) {
 
-    if (!oled_task_user()) {
-        return false;
+    if (!oled_task_user()) return false;
+
+    switch (screen_mode) {
+        case CAT:
+            curr_wpm = get_current_wpm();
+            led_usb_state = host_keyboard_led_state();
+            render_wpm();
+            render_bongocat();
+            break;
+
+        case DOOM:
+            
+            break
     }
 
-    if (run_oled) {
-        curr_wpm = get_current_wpm();
-        led_usb_state = host_keyboard_led_state();
-        render_wpm();
-        render_bongocat();
-    }
     return false;
 }
 

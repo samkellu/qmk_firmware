@@ -39,6 +39,12 @@ enum custom_keycodes {
     KC_OLED_STATE = QK_KB_0,
 };
 
+enum oled_state {
+    OFF,
+    CAT,
+    DOOM
+};
+
 enum state {
     IDLE,
     SLOW,
@@ -756,3 +762,34 @@ static const char right_down_open [] PROGMEM = {
     0x01, 0x01, 0x01, 0x01, 0x03, 0x03, 0x03, 0x03, 0x07, 0x07, 0x06, 0x06, 0x0e, 0x0e, 0x0c, 0x0c, 
     0x0c, 0x1c, 0x18, 0x18, 0x18, 0x38, 0x30, 0x30, 0x30, 0x70, 0x70, 0x60, 0x60, 0xe0, 0xe0, 0xc0
 };
+
+// Animation frame sequences
+const char* idle_no_caps[] = {idle_0, idle_0, idle_0, idle_0, idle_1, idle_2, idle_1, idle_0};
+const char* slow_no_caps[] = {idle_0, both_down, idle_0};
+const char* med_no_caps[]  = {left_down, idle_0, both_down, idle_0, right_down, idle_0};
+const char* fast_no_caps[] = {left_down, right_down};
+
+const char* idle_caps[] = {idle_0_open, idle_0_open, idle_0_open, idle_0_open, idle_1_open, idle_2_open, idle_1_open, idle_0_open};
+const char* slow_caps[] = {idle_0_open, both_down_open, idle_0_open};
+const char* med_caps[]  = {left_down_open, idle_0_open, both_down_open, idle_0_open, right_down_open, idle_0_open};
+const char* fast_caps[] = {left_down_open, right_down_open};
+
+// size of a singular frame in the animation
+const size_t frame_size = sizeof(idle_0);
+
+// Framesets for each typing state
+const struct frame_set no_caps[] = {
+    {.frames = idle_no_caps, .size = sizeof(idle_no_caps) / sizeof(char*), .frame_len = FRAME_LENGTH_SLOW},
+    {.frames = slow_no_caps, .size = sizeof(slow_no_caps) / sizeof(char*), .frame_len = FRAME_LENGTH_SLOW},
+    {.frames = med_no_caps,  .size = sizeof(med_no_caps) / sizeof(char*),  .frame_len = FRAME_LENGTH_MED},
+    {.frames = fast_no_caps, .size = sizeof(fast_no_caps) / sizeof(char*), .frame_len = FRAME_LENGTH_FAST}
+};
+
+const struct frame_set caps[] = {
+    {.frames = idle_caps, .size = sizeof(idle_caps) / sizeof(char*), .frame_len = FRAME_LENGTH_SLOW},
+    {.frames = slow_caps, .size = sizeof(slow_caps) / sizeof(char*), .frame_len = FRAME_LENGTH_SLOW},
+    {.frames = med_caps,  .size = sizeof(med_caps) / sizeof(char*),  .frame_len = FRAME_LENGTH_MED},
+    {.frames = fast_caps, .size = sizeof(fast_caps) / sizeof(char*), .frame_len = FRAME_LENGTH_FAST}
+};
+
+const struct frame_set* frame_sets[] = {no_caps, caps};
