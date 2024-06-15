@@ -28,7 +28,7 @@
 #define WALL_OFFSET 27
 #define NUM_WALLS 4
 #define UI_HEIGHT 54
-#define START_TIME_MILLI 4
+#define START_TIME_MILLI 4000
 #define PI 3.14159
 #define FRAME_TIME_MILLI 100
 
@@ -79,6 +79,8 @@ const float dov = 10.0f;
 const float fov = 80.0f;
 
 // Doom logo intro screen, stored in PROGMEM to save global section space
+#define LOGO_WIDTH 128
+#define LOGO_HEIGHT 64
 static const char doom_logo[] PROGMEM = {
   0x7F, 0xFF, 0xFF, 0xFE, 0x03, 0xFF, 0xFF, 0xF8, 0x1F, 0xFF, 0xFF, 0xC3, 0xFF, 0x80, 0xFF, 0xFE,
   0x3F, 0xFF, 0xFF, 0xFF, 0x87, 0xFF, 0xFF, 0xFC, 0x3F, 0xFF, 0xFF, 0xF3, 0xFF, 0x81, 0xFF, 0xFC,
@@ -146,8 +148,7 @@ static const char doom_logo[] PROGMEM = {
   0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-
-const size_t logo_size = sizeof(doom_logo);
+const uint16_t doom_logo_size = sizeof(doom_logo);
 
 // Gun sprite and mask
 #define GUN_WIDTH   32
@@ -174,7 +175,7 @@ static const char gun_bmp_mask[] PROGMEM = {
     0x7f, 0xff, 0xff, 0xf8, 0x7f, 0xff, 0xff, 0xf8, 0x7f, 0xff, 0xff, 0xf8, 0xff, 0xff, 0xff, 0xf0
 };
 
-const size_t gun_size = sizeof(gun_bmp);
+const uint16_t gun_size = sizeof(gun_bmp);
 
 // Muzzle flash sprite
 #define FLASH_WIDTH 16
@@ -184,7 +185,7 @@ static const char PROGMEM muzzle_flash_bmp [] = {
     0x3F, 0xFC, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 0xFC, 0x2F, 0xFC
 };
 
-const size_t flash_size = sizeof(muzzle_flash_bmp);
+const uint16_t flash_size = sizeof(muzzle_flash_bmp);
 
 float pow2(float x);
 
@@ -201,3 +202,5 @@ void vertical_line(int x, int half_length);
 void check_line(int x, int half_length, bool phase);
 
 bool collision_detection(vec2 p);
+
+void oled_write_bmp_P(const char* data, const uint16_t size, int width, int height, int x, int y, bool invert);

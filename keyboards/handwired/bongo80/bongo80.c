@@ -38,8 +38,7 @@ float dist2(vec2 v, vec2 u) { return pow2(v.x - u.x) + pow2(v.y - u.y); }
 void doom_setup(void) {
 
     // Runs intro sequence
-    //oled_set_cursor(0, 0);
-    //oled_write_raw_P(doom_logo, logo_size);
+    oled_write_bmp_P(doom_logo, doom_logo_size, LOGO_WIDTH, LOGO_HEIGHT, 0, 0, false);
     game_time = timer_read();
 
     // Initializes player state
@@ -56,7 +55,7 @@ void doom_setup(void) {
 
 void doom_update(controls c) {
 
-    //if (timer_elapsed(game_time) < START_TIME_MILLI) return;
+    if (timer_elapsed(game_time) < START_TIME_MILLI) return;
 
     oled_clear();
     if (c.shoot && shot_timer == 0) {
@@ -174,14 +173,12 @@ void raycast(vec2 p, int pa, bool show_flash) {
         }
     }
 
-    // if (show_flash) {
-    //     oled_set_cursor(SCREEN_WIDTH/2 - FLASH_WIDTH/2 + 2, UI_HEIGHT - 3*FLASH_HEIGHT/4 - GUN_HEIGHT);
-    //     oled_write_raw_P(muzzle_flash_bmp, flash_size);
-    // }
+    if (show_flash) {
+        oled_write_bmp_P(muzzle_flash_bmp, flash_size, FLASH_WIDTH, FLASH_HEIGHT, SCREEN_WIDTH/2 - FLASH_WIDTH/2 + 2, UI_HEIGHT - 3*FLASH_HEIGHT/4 - GUN_HEIGHT, false);
+    }
     
-    // oled_set_cursor(SCREEN_WIDTH/2 - GUN_WIDTH/2, UI_HEIGHT - GUN_HEIGHT);
-    // oled_write_ln_P(gun_bmp_mask, gun_size);
-    // oled_write_raw_P(gun_bmp, gun_size);
+    oled_write_bmp_P(gun_bmp_mask, gun_size, GUN_WIDTH, GUN_HEIGHT, SCREEN_WIDTH/2 - GUN_WIDTH/2, UI_HEIGHT - GUN_HEIGHT, true);
+    oled_write_bmp_P(gun_bmp, gun_size, GUN_WIDTH, GUN_HEIGHT, SCREEN_WIDTH/2 - GUN_WIDTH/2, UI_HEIGHT - GUN_HEIGHT, false);
 }
 
 void vertical_line(int x, int half_length) {
@@ -238,6 +235,26 @@ bool collision_detection(vec2 p) {
     }
 
     return false;
+}
+
+void oled_write_bmp_P(const char* data, const uint16_t size, int width, int height, int x, int y, bool invert) {
+
+    int row = 0, col = 0;
+    for (int i = 0; i < size; i++) {
+        uint8_t c = pgm_read_byte(data++);
+        for (int j = 0; j < 8; j++) {
+            bool px = c & (1 << (7 - j));
+            if (px) oled_write_pixel(x + col, y + row, !invert);
+
+            if (col == width - 1) {
+                row++;
+                col = 0;
+                continue;
+            }
+
+            col++;
+        }
+    }
 }
 
 
