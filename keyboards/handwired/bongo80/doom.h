@@ -30,7 +30,7 @@
 #define UI_HEIGHT 54
 #define START_TIME_MILLI 4000
 #define PI 3.14159
-#define FRAME_TIME_MILLI 100
+#define FRAME_TIME_MILLI 70
 
 
 // Defines the texture that a wall will have
@@ -232,6 +232,8 @@ vec2 sub(vec2 v, vec2 u);
 vec2 add(vec2 v, vec2 u);
 
 vec2 proj(vec2 v, vec2 u);
+
+float inv_sqrt(float num);
 
 void doom_setup(void);
 

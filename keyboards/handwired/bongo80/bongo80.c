@@ -162,17 +162,18 @@ void raycast(vec2 p, int pa, bool show_flash) {
         }
 
         if (found) {
-            int length = 25000 / dist;
+            int length = 1000 * inv_sqrt(dist);
 
             // Draws lines at the edges of walls
-            int wall_len = dist2(cur_wall.points[0], cur_wall.points[1]);
-            if (cur_edge2pt < 2 || wall_len - cur_edge2pt < 2) {
+            int wall_len = 1 / inv_sqrt(dist2(cur_wall.points[0], cur_wall.points[1]));
+            cur_edge2pt = 1 / inv_sqrt(cur_edge2pt);
+            if (cur_edge2pt < 2 || cur_edge2pt > wall_len - 2) {
                 vertical_line(i, length);
                 continue;
             }
 
             if (cur_wall.tex == CHECK) {
-                check_line(i, length, (cur_edge2pt % 1000) < 500);
+                check_line(i, length, cur_edge2pt % 10 < 5);
             }
         //      } else if (cur_wall.tex == STRIPE_H) {
         //
@@ -193,13 +194,24 @@ void raycast(vec2 p, int pa, bool show_flash) {
     oled_write_bmp_P(gun_bmp, gun_size, GUN_WIDTH, GUN_HEIGHT, SCREEN_WIDTH/2 - GUN_WIDTH/2, UI_HEIGHT - GUN_HEIGHT, false);
 }
 
+// A classic https://en.wikipedia.org/wiki/Fast_inverse_square_root
+float inv_sqrt(float num) {
+    
+    float x2 = num * 0.5f, y = num;
+    uint32_t i;
+    memcpy(&i, &y, sizeof(float));
+    i = 0x5f3759df - ( i >> 1 );
+    memcpy(&y, &i, sizeof(float));
+    return y * (1.5f - ( x2 * y * y ));
+}
+
 void vertical_line(int x, int half_length) {
     
     for (int i = 0; i < half_length; i += 2) {
-        oled_write_pixel(x, WALL_OFFSET + i, 1);
+        oled_write_pixel(x, WALL_OFFSET - i, 1);
         // Ensures that the wall doesnt overlap with the UI
-        if (UI_HEIGHT/2 + WALL_OFFSET - i < UI_HEIGHT) {
-            oled_write_pixel(x, WALL_OFFSET - i, 1);
+        if (UI_HEIGHT/2 + WALL_OFFSET + i < UI_HEIGHT) {
+            oled_write_pixel(x, WALL_OFFSET + i, 1);
         }
     }
 }
