@@ -390,20 +390,16 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
                 doom_inputs.l = record->event.pressed;
                 return false;
 
-
             case KC_RIGHT:
                 doom_inputs.r = record->event.pressed;
                 return false;
-
 
             case KC_SPC:
                 doom_inputs.shoot = record->event.pressed;
                 return false;
         }
 
-    } else if (!process_record_user(keycode, record)) {
-        return false;
-    }
+    } else if (!process_record_user(keycode, record)) return false;
 
     switch (keycode) {
         // Handles the keycode for turning on and off the oled screen
@@ -429,6 +425,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
 
             return false;
     }
+    
     return true;
 }
 
