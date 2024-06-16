@@ -33,7 +33,19 @@ uint8_t score;
 
 float pow2(float x) { return x * x; }
 
-float dist2(vec2 v, vec2 u) { return pow2(v.x - u.x) + pow2(v.y - u.y); }
+float dot(vec2 u, vec2 v) { return u.x * v.x + u.y * v.y; }
+
+float dist2(vec2 u, vec2 v) { return dot(sub(u, v), sub(u, v)); }
+
+vec2 sub(vec2 u, vec2 v) { return (vec2) {u.x - v.x, u.y - v.y}; }
+
+vec2 add(vec2 u, vec2 v) { return (vec2) {u.x + v.x, u.y + v.y}; }
+
+vec2 proj(vec2 u, vec2 v) { 
+
+    float t = dot(u, v) / dot(v, v);
+    return (vec2) {t * v.x, t * v.y};
+}
 
 void doom_setup(void) {
 
@@ -225,12 +237,13 @@ bool collision_detection(vec2 p) {
     int collision_dist2 = COLLISION_DIST * COLLISION_DIST;
     for (int i = 0; i < NUM_WALLS; i++) {
         wall w = walls[i];
-        float w2 = dist2(w.points[0], w.points[1]);
-        if (w2 == 0) continue;
+        vec2 up = sub(p, w.points[0]);
+        vec2 uv = sub(w.points[1], w.points[0]);
+        vec2 p_proj = add(proj(up, uv), w.points[0]);
+        vec2 u_p_proj = sub(p_proj, w.points[0]);
 
-        float t = ((p.x - w.points[0].x) * (w.points[1].x - w.points[0].x) + (p.y - w.points[0].y) * (w.points[1].y - w.points[0].y)) / w2;
-        vec2 proj = {w.points[0].x + t * (w.points[1].x - w.points[0].x), w.points[0].y + t * (w.points[1].y - w.points[0].y)};
-        float d2 = dist2(p, proj);
+        float k = uv.x != 0 ? u_p_proj.x / uv.x : u_p_proj.y / uv.y;
+        float d2 = k <= 0 ? dist2(p, w.points[0]) : k >= 1 ? dist2(p, w.points[1]) : dist2(p, p_proj);
         if (d2 < collision_dist2) return true;
     }
 

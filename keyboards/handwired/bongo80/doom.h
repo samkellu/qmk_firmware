@@ -26,7 +26,7 @@
 
 #define COLLISION_DIST 5
 #define WALL_OFFSET 27
-#define NUM_WALLS 4
+#define NUM_WALLS 20
 #define UI_HEIGHT 54
 #define START_TIME_MILLI 4000
 #define PI 3.14159
@@ -59,16 +59,50 @@ typedef struct controls {
   bool f;
   bool shoot;
 } controls;
+
+// +-----------------------------------------+
+// |                                         |
+// |                                         |
+// |          +-+     +------------+         |
+// |          | |     |            |         |
+// |          | |     |            |         |
+// +----------+ |     +--------+   +---------+
+// +------------+              |
+// |                           |
+// |                           |
+// |       +--------+          |
+// |       |        |          |
+// |       |        |          |
+// |       |        |          |
+// |       |        |          |
+// |       +--------+          |
+// |                           |
+// |                           |
+// +---------------------------+
+
+
 // Initializes walls
 const wall walls[] PROGMEM = {
-    {{{10, 10}, {10, 120}}, CHECK},
-    {{{10, 120}, {120, 120}}, CHECK},
-    {{{120, 120}, {120, 10}}, CHECK},
-    {{{120, 10}, {10, 10}}, CHECK}
-    // {40.0f, 40.0f, 40.0f, 50.0f, CHECK},
-    // {40.0f, 50.0f, 50.0f, 50.0f, CHECK},
-    // {50.0f, 50.0f, 50.0f, 40.0f, CHECK},
-    // {50.0f, 40.0f, 40.0f, 40.0f, CHECK}
+    {{{0, 0}, {200, 0}}, CHECK},
+    {{{200, 0}, {200, 70}}, CHECK},
+    {{{200, 70}, {160, 70}}, CHECK},
+    {{{160, 70}, {150, 40}}, CHECK},
+    {{{150, 40}, {120, 40}}, CHECK},
+    {{{120, 40}, {120, 70}}, CHECK},
+    {{{120, 70}, {140, 70}}, CHECK},
+    {{{140, 70}, {140, 200}}, CHECK},
+    {{{140, 200}, {0, 200}}, CHECK},
+    {{{0, 200}, {0, 90}}, CHECK},
+    {{{0, 90}, {80, 90}}, CHECK},
+    {{{80, 90}, {80, 40}}, CHECK},
+    {{{80, 40}, {60, 40}}, CHECK},
+    {{{60, 40}, {60, 70}}, CHECK},
+    {{{60, 70}, {0, 70}}, CHECK},
+    {{{0, 70}, {0, 0}}, CHECK},
+    {{{40, 170}, {40, 130}}, CHECK},
+    {{{40, 130}, {80, 130}}, CHECK},
+    {{{80, 130}, {80, 170}}, CHECK},
+    {{{80, 170}, {40, 170}}, CHECK},
 };
 
 // Number of degrees per tick
@@ -189,7 +223,15 @@ const uint16_t flash_size = sizeof(muzzle_flash_bmp);
 
 float pow2(float x);
 
+float dot(vec2 v, vec2 u);
+
 float dist2(vec2 v, vec2 u);
+
+vec2 sub(vec2 v, vec2 u);
+
+vec2 add(vec2 v, vec2 u);
+
+vec2 proj(vec2 v, vec2 u);
 
 void doom_setup(void);
 
