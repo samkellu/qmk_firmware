@@ -167,7 +167,7 @@ void raycast(vec2 p, int pa, bool show_flash) {
             // Draws lines at the edges of walls
             int wall_len = 1 / inv_sqrt(dist2(cur_wall.points[0], cur_wall.points[1]));
             cur_edge2pt = 1 / inv_sqrt(cur_edge2pt);
-            if (cur_edge2pt < 2 || cur_edge2pt > wall_len - 2) {
+            if (cur_edge2pt < 1 || cur_edge2pt > wall_len - 1) {
                 vertical_line(i, length);
                 continue;
             }
@@ -210,7 +210,7 @@ void vertical_line(int x, int half_length) {
     for (int i = 0; i < half_length; i += 2) {
         oled_write_pixel(x, WALL_OFFSET - i, 1);
         // Ensures that the wall doesnt overlap with the UI
-        if (UI_HEIGHT/2 + WALL_OFFSET + i < UI_HEIGHT) {
+        if (WALL_OFFSET + i < UI_HEIGHT) {
             oled_write_pixel(x, WALL_OFFSET + i, 1);
         }
     }
