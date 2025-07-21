@@ -212,23 +212,23 @@ segment* bsp_wallgen(segment* walls, int* num_walls, int l, int r, int t, int b,
 //     }
 // }
 
-void clear_frame_buffer() {
-    memset(frame_buffer, 0, FRAME_BUFFER_LENGTH);
-}
+// void clear_frame_buffer() {
+//     memset(frame_buffer, 0, FRAME_BUFFER_LENGTH);
+// }
 
-void print_frame_buffer() {
-    int idx = 0;
-    for (int y = 0; y < SCREEN_HEIGHT - UI_HEIGHT; y++)
-    {
-        for (int x = 0; x < SCREEN_WIDTH; x++)
-        {
-            int val = frame_buffer[idx / sizeof(char)] & 1 << (idx % sizeof(char));
-            printf("%d", val);
-            idx++;
-        }
-        printf("\n");
-    }
-}
+// void print_frame_buffer() {
+//     int idx = 0;
+//     for (int y = 0; y < SCREEN_HEIGHT - UI_HEIGHT; y++)
+//     {
+//         for (int x = 0; x < SCREEN_WIDTH; x++)
+//         {
+//             int val = frame_buffer[idx / sizeof(char)] & 1 << (idx % sizeof(char));
+//             printf("%d", val);
+//             idx++;
+//         }
+//         printf("\n");
+//     }
+// }
 
 
 // =================== GRAPHICS =================== //
@@ -306,7 +306,7 @@ void render_map(vec2 p, int pa, bool is_shooting) {
 
         int wall2pt;
         bool hit_wall = false;
-        segment closest_wall;
+        segment closest_wall = {{0, 0}, {0, 0}, CHECK};
         depth_buf_info info = {MAX_VIEW_DIST, 0, 0, 0};
 
         // Checks if the ray from the camera intersects any walls
@@ -769,7 +769,7 @@ void doom_update(controls c) {
     if (time_elapsed < FRAME_TIME_MILLI) return;
     
     oled_clear();
-    clear_frame_buffer();
+    // clear_frame_buffer();
     if (shot_timer > 0) shot_timer--;
     if (c.shoot && shot_timer == 0) shot_timer = 2;
 
@@ -823,7 +823,7 @@ void doom_update(controls c) {
     oled_write("FPS:", false);
     oled_write(get_u8_str(fpms, ' '), false);
 
-    print_frame_buffer();
+    // print_frame_buffer();
     last_frame = timer_read();
 }
 

@@ -107,7 +107,7 @@ typedef struct depth_buf_info {
 } depth_buf_info;
 
 #define NUM_ENEMIES 2
-static enemy enemies[NUM_ENEMIES];
+enemy enemies[NUM_ENEMIES];
 
 // Doom logo intro screen, stored in PROGMEM to save global section space
 #define LOGO_WIDTH 128
@@ -335,8 +335,8 @@ static const sprite imp_sprite_hurt_2 = {
 
 static const sprite imp_hurt_sheet[] = {imp_sprite_hurt_1, imp_sprite_hurt_2};
 
-#define FRAME_BUFFER_LENGTH (SCREEN_WIDTH * (SCREEN_HEIGHT - UI_HEIGHT)) / sizeof(char)
-static unsigned char frame_buffer[FRAME_BUFFER_LENGTH];
+// #define FRAME_BUFFER_LENGTH (SCREEN_WIDTH * (SCREEN_HEIGHT - UI_HEIGHT)) / sizeof(char)
+// static unsigned char frame_buffer[FRAME_BUFFER_LENGTH];
 
 float pow2(float x);
 

@@ -30,23 +30,23 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     
     if (screen_mode == DOOM) {
         switch (keycode) {
-            case KC_KP_8:
-            doom_inputs.u = record->event.pressed;
-            return false;
+            case KC_UP:
+                doom_inputs.u = record->event.pressed;
+                return false;
             
-            case KC_KP_5:
-            doom_inputs.d = record->event.pressed;
-            return false;
+            case KC_DOWN:
+                doom_inputs.d = record->event.pressed;
+                return false;
 
-            case KC_KP_4:
+            case KC_LEFT:
                 doom_inputs.l = record->event.pressed;
                 return false;
 
-            case KC_KP_6:
+            case KC_RIGHT:
                 doom_inputs.r = record->event.pressed;
                 return false;
 
-            case KC_KP_ENTER:
+            case KC_SPC:
                 doom_inputs.shoot = record->event.pressed;
                 return false;
         }
