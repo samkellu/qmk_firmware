@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "doom.h": "c",
+        "bongo80.h": "c",
+        "bongo.h": "c"
+    }
+}

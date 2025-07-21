@@ -1,4 +1,4 @@
-/* Copyright 2023 Sam Kelly (@samkellu)
+/* Copyright 2025 Sam Kelly (@samkellu)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,14 @@
 
 #pragma once
 
-#include "quantum.h"
+#ifdef USE_EMULATOR
+  #include "../emulator/emulator.h"
+#else
+  #include "quantum.h"
+#endif
+
+#ifndef BONGO_INCL
+#define BONGO_INCL
 
 // Time per frame in millis
 #define FRAME_LENGTH_SLOW 400
@@ -33,16 +40,6 @@ struct frame_set {
     int frame_len;
     uint8_t size;
     const char** frames;
-};
-
-enum custom_keycodes {
-    KC_OLED_STATE = QK_KB_0,
-};
-
-enum oled_state {
-    OFF,
-    CAT,
-    DOOM
 };
 
 enum state {
@@ -762,3 +759,39 @@ static const char right_down_open [] PROGMEM = {
     0x01, 0x01, 0x01, 0x01, 0x03, 0x03, 0x03, 0x03, 0x07, 0x07, 0x06, 0x06, 0x0e, 0x0e, 0x0c, 0x0c, 
     0x0c, 0x1c, 0x18, 0x18, 0x18, 0x38, 0x30, 0x30, 0x30, 0x70, 0x70, 0x60, 0x60, 0xe0, 0xe0, 0xc0
 };
+
+// Animation frame sequences
+static const char* idle_no_caps[] = {idle_0, idle_0, idle_0, idle_0, idle_1, idle_2, idle_1, idle_0};
+static const char* slow_no_caps[] = {idle_0, both_down, idle_0};
+static const char* med_no_caps[]  = {left_down, idle_0, both_down, idle_0, right_down, idle_0};
+static const char* fast_no_caps[] = {left_down, right_down};
+
+static const char* idle_caps[] = {idle_0_open, idle_0_open, idle_0_open, idle_0_open, idle_1_open, idle_2_open, idle_1_open, idle_0_open};
+static const char* slow_caps[] = {idle_0_open, both_down_open, idle_0_open};
+static const char* med_caps[]  = {left_down_open, idle_0_open, both_down_open, idle_0_open, right_down_open, idle_0_open};
+static const char* fast_caps[] = {left_down_open, right_down_open};
+
+// Size of a singular frame in the animation
+static const size_t frame_size = sizeof(idle_0);
+
+// Framesets for each typing state
+static const struct frame_set no_caps[] = {
+    {.frames = idle_no_caps, .size = sizeof(idle_no_caps) / sizeof(char*), .frame_len = FRAME_LENGTH_SLOW},
+    {.frames = slow_no_caps, .size = sizeof(slow_no_caps) / sizeof(char*), .frame_len = FRAME_LENGTH_SLOW},
+    {.frames = med_no_caps,  .size = sizeof(med_no_caps) / sizeof(char*),  .frame_len = FRAME_LENGTH_MED},
+    {.frames = fast_no_caps, .size = sizeof(fast_no_caps) / sizeof(char*), .frame_len = FRAME_LENGTH_FAST}
+};
+
+static const struct frame_set caps[] = {
+    {.frames = idle_caps, .size = sizeof(idle_caps) / sizeof(char*), .frame_len = FRAME_LENGTH_SLOW},
+    {.frames = slow_caps, .size = sizeof(slow_caps) / sizeof(char*), .frame_len = FRAME_LENGTH_SLOW},
+    {.frames = med_caps,  .size = sizeof(med_caps) / sizeof(char*),  .frame_len = FRAME_LENGTH_MED},
+    {.frames = fast_caps, .size = sizeof(fast_caps) / sizeof(char*), .frame_len = FRAME_LENGTH_FAST}
+};
+
+// Funcs
+void bongo_update(void);
+void render_wpm(bool);
+void render_bongocat(bool);
+
+#endif
