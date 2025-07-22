@@ -335,8 +335,8 @@ static const sprite imp_sprite_hurt_2 = {
 
 static const sprite imp_hurt_sheet[] = {imp_sprite_hurt_1, imp_sprite_hurt_2};
 
-// #define FRAME_BUFFER_LENGTH (SCREEN_WIDTH * (SCREEN_HEIGHT - UI_HEIGHT)) / sizeof(char)
-// static unsigned char frame_buffer[FRAME_BUFFER_LENGTH];
+#define FRAME_BUFFER_LENGTH (SCREEN_WIDTH * (SCREEN_HEIGHT - UI_HEIGHT)) / sizeof(char)
+static uint8_t frame_buffer[FRAME_BUFFER_LENGTH];
 
 float pow2(float x);
 

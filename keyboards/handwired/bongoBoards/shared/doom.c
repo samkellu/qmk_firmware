@@ -198,37 +198,46 @@ segment* bsp_wallgen(segment* walls, int* num_walls, int l, int r, int t, int b,
 
 // =================== BUFFER =================== //
 
+// 128px wide display only!
+void write_pixel(int x, int y, bool white)
+{
+    if (x < 0 || x >= SCREEN_WIDTH) return;
+    if (y < 0 || y >= SCREEN_HEIGHT - UI_HEIGHT) return;
 
-// void write_pixel(int x, int y, bool white)
-// {
-//     if (x < 0 || x >= SCREEN_WIDTH) return;
-//     if (y < 0 || y >= SCREEN_HEIGHT - UI_HEIGHT) return;
+    int block = y >> 3; // y / 8
+    int bit = y & 0x07; // y % 8
+    int byte_idx = (block << 7) + x;
 
-//     int bit_offset = x + (y * SCREEN_WIDTH);
-//     if (white) {
-//         frame_buffer[FRAME_BUFFER_LENGTH] &= ~(1 << (bit_offset % sizeof(char)));
-//     } else {
-//         frame_buffer[FRAME_BUFFER_LENGTH] |= 1 << (bit_offset % sizeof(char));
-//     }
-// }
+    uint8_t mask = 1 << bit;
+    if (white) {
+        frame_buffer[byte_idx] |= 1 << bit;
+    } else {
+        frame_buffer[byte_idx] &= ~(1 << bit);
+    }
+}
 
-// void clear_frame_buffer() {
-//     memset(frame_buffer, 0, FRAME_BUFFER_LENGTH);
-// }
+void clear_frame_buffer() {
+    memset(frame_buffer, 0, FRAME_BUFFER_LENGTH);
+}
 
-// void print_frame_buffer() {
-//     int idx = 0;
-//     for (int y = 0; y < SCREEN_HEIGHT - UI_HEIGHT; y++)
-//     {
-//         for (int x = 0; x < SCREEN_WIDTH; x++)
-//         {
-//             int val = frame_buffer[idx / sizeof(char)] & 1 << (idx % sizeof(char));
-//             printf("%d", val);
-//             idx++;
-//         }
-//         printf("\n");
-//     }
-// }
+void render_buffer() {
+    oled_write(frame_buffer);
+    clear_frame_buffer();
+}
+
+void print_frame_buffer() {
+    int idx = 0;
+    for (int y = 0; y < SCREEN_HEIGHT - UI_HEIGHT; y++)
+    {
+        for (int x = 0; x < SCREEN_WIDTH; x++)
+        {
+            int val = frame_buffer[idx / sizeof(char)] & 1 << (idx % sizeof(char));
+            printf("%d", val);
+            idx++;
+        }
+        printf("\n");
+    }
+}
 
 
 // =================== GRAPHICS =================== //
@@ -823,7 +832,6 @@ void doom_update(controls c) {
     oled_write("FPS:", false);
     oled_write(get_u8_str(fpms, ' '), false);
 
-    // print_frame_buffer();
     last_frame = timer_read();
 }
 
