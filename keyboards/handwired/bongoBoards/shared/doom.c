@@ -202,17 +202,15 @@ segment* bsp_wallgen(segment* walls, int* num_walls, int l, int r, int t, int b,
 void write_pixel(int x, int y, bool white)
 {
     if (x < 0 || x >= SCREEN_WIDTH) return;
-    if (y < 0 || y >= SCREEN_HEIGHT - UI_HEIGHT) return;
+    if (y < 0 || y >= UI_HEIGHT) return;
 
-    int block = y >> 3; // y / 8
-    int bit = y & 0x07; // y % 8
-    int byte_idx = (block << 7) + x;
+    int byte = (x + y * SCREEN_WIDTH) >> 3; // y / 8
+    int bit = (x + y * SCREEN_WIDTH) & 0x07; // y % 8
 
-    uint8_t mask = 1 << bit;
     if (white) {
-        frame_buffer[byte_idx] |= 1 << bit;
+        frame_buffer[byte] |= 1 << bit;
     } else {
-        frame_buffer[byte_idx] &= ~(1 << bit);
+        frame_buffer[byte] &= ~(1 << bit);
     }
 }
 
@@ -220,24 +218,39 @@ void clear_frame_buffer() {
     memset(frame_buffer, 0, FRAME_BUFFER_LENGTH);
 }
 
-void render_buffer() {
-    oled_write(frame_buffer);
+void render_frame_buffer() {
+
+    oled_set_cursor(0, 0);
+    oled_write_raw((const char*) frame_buffer, sizeof(frame_buffer));
+    // int row = 0, col = 0;
+    // for (int i = 0; i < FRAME_BUFFER_LENGTH; i++) {
+    //     uint8_t c = frame_buffer[i];
+    //     for (int j = 0; j < 8; j++) {
+    //         bool px = c & (1 << j);
+    //         oled_oled_write_pixel(col, row, px);
+    //         if (++col == SCREEN_WIDTH) {
+    //             row++;
+    //             col = 0;
+    //         }
+    //     }
+    // }
+
     clear_frame_buffer();
 }
 
-void print_frame_buffer() {
-    int idx = 0;
-    for (int y = 0; y < SCREEN_HEIGHT - UI_HEIGHT; y++)
-    {
-        for (int x = 0; x < SCREEN_WIDTH; x++)
-        {
-            int val = frame_buffer[idx / sizeof(char)] & 1 << (idx % sizeof(char));
-            printf("%d", val);
-            idx++;
-        }
-        printf("\n");
-    }
-}
+// void print_frame_buffer() {
+//     int idx = 0;
+//     for (int y = 0; y < UI_HEIGHT; y++)
+//     {
+//         for (int x = 0; x < SCREEN_WIDTH; x++)
+//         {
+//             int val = frame_buffer[idx / sizeof(char)] & 1 << (idx % sizeof(char));
+//             printf("%d", val);
+//             idx++;
+//         }
+//         printf("\n");
+//     }
+// }
 
 
 // =================== GRAPHICS =================== //
@@ -777,8 +790,6 @@ void doom_update(controls c) {
     int time_elapsed = timer_elapsed32(last_frame);
     if (time_elapsed < FRAME_TIME_MILLI) return;
     
-    oled_clear();
-    // clear_frame_buffer();
     if (shot_timer > 0) shot_timer--;
     if (c.shoot && shot_timer == 0) shot_timer = 2;
 
@@ -809,6 +820,7 @@ void doom_update(controls c) {
         return;
     #endif
         
+    oled_clear();
     render_map(p, pa, shot_timer > 0 && c.shoot);
     draw_gun(c.u, shot_timer > 0);
 
@@ -832,6 +844,8 @@ void doom_update(controls c) {
     oled_write("FPS:", false);
     oled_write(get_u8_str(fpms, ' '), false);
 
+    oled_render();
+    // render_frame_buffer();
     last_frame = timer_read();
 }
 
