@@ -276,20 +276,42 @@ segment* bsp_wallgen(segment* walls, int* num_walls, int l, int r, int t, int b,
 // =================== GRAPHICS =================== //
 
 typedef struct endpoint {
-    segment* s;
-    struct endpoint* next;
+    segment* segment;
+    struct dll* adjacent;
     bool is_end;
-    float angle_to_cone_l;
 } endpoint;
 
-endpoint* merge_sort_endpoints(endpoint* root) {
+typedef struct dll {
+    void* data;
+    struct dll* next;
+    struct dll* prev;
+    float sorting_factor;
+} dll;
+
+void print_dll(dll* root) {
+    dll* debug_curs = root;
+    printf("Printing DLL: \n");
+    if (!root) {
+        printf("Root was null!\n\n");
+        return;
+    }
+
+    while (debug_curs) {
+        printf("%f -> ", debug_curs->sorting_factor);
+        debug_curs = debug_curs->next;
+    }
+    
+    printf("\n\n");
+}
+
+dll* merge_sort_dll(dll* root) {
 
     if (!root || !root->next)
         return root;
 
     // Split linked list
-    endpoint* fast_ptr = root;
-    endpoint* slow_ptr = root;
+    dll* fast_ptr = root;
+    dll* slow_ptr = root;
     while (fast_ptr && fast_ptr->next) {
         fast_ptr = fast_ptr->next->next;
         if (fast_ptr) {
@@ -297,46 +319,50 @@ endpoint* merge_sort_endpoints(endpoint* root) {
         }
     }
 
-    endpoint* r_root = slow_ptr->next;
+    dll* r_root = slow_ptr->next;
     slow_ptr->next = NULL;
 
-    endpoint* left = merge_sort_endpoints(root);
-    endpoint* right = merge_sort_endpoints(r_root);
+    dll* left = merge_sort_dll(root);
+    dll* right = merge_sort_dll(r_root);
 
     // Merge
-    endpoint new_root = {NULL, NULL, false, -1.0};
-    endpoint* curs = &new_root;
+    dll new_root = {NULL, NULL, NULL, -1.0};
+    dll* curs = &new_root;
     while (left || right) {
-        if (left && (!right || left->angle_to_cone_l < right->angle_to_cone_l)) {
+        if (left && (!right || left->sorting_factor < right->sorting_factor)) {
             curs->next = left;
+            left->prev = curs;
             left = left->next;
         } else {
             curs->next = right;
+            right->prev = curs;
             right = right->next;
         }
         
         curs = curs->next;
     }
 
+    new_root.next->prev = NULL;
     return new_root.next;
 }
 
 // 2.5D raycast renderer for the map and entities around the player
 void render_map(vec2 p, int pa, bool is_shooting) {
 
+    // printf("\n\n=================== BEGIN FRAME ======================\n\n");
     // Get walls that intersect the FOV
     segment* relevant_walls = NULL;
     int num_relevant = 0;
 
     segment cone_l = {p, {0, 0}};
-    float bound_angle = -FOV / 2;
-    cone_l.v.x = p.x + DOV * cosf((pa + bound_angle) * PI / 180);
-    cone_l.v.y = p.y + DOV * sinf((pa + bound_angle) * PI / 180);
+    float bound_angle = (pa - FOV / 2) * PI / 180;
+    cone_l.v.x = p.x + DOV * cosf(bound_angle);
+    cone_l.v.y = p.y + DOV * sinf(bound_angle);
 
     segment cone_r = {p, {0, 0}};
-    bound_angle = FOV / 2;
-    cone_r.v.x = p.x + DOV * cosf((pa + bound_angle) * PI / 180);
-    cone_r.v.y = p.y + DOV * sinf((pa + bound_angle) * PI / 180);
+    bound_angle = (pa + FOV / 2) * PI / 180;
+    cone_r.v.x = p.x + DOV * cosf(bound_angle);
+    cone_r.v.y = p.y + DOV * sinf(bound_angle);
 
     for (int i = 0; i < num_walls; i++) {
         segment w = walls[i];
@@ -357,7 +383,7 @@ void render_map(vec2 p, int pa, bool is_shooting) {
         // If not check if it fully intersects the cone
         if (!hit)
         {
-            raycast(cone_l.u, sub(cone_l.v, cone_l.u), w, &hit);
+            raycast(cone_l.u, cone_l.v, w, &hit);
         }
 
         if (hit) {
@@ -370,56 +396,178 @@ void render_map(vec2 p, int pa, bool is_shooting) {
     depth_buf_info depth_buf[SCREEN_WIDTH];
     segment ray = {p, {0, 0}};
 
-    endpoint* root = NULL;
-    endpoint* curs = NULL;
-    for (int i = 0; i < num_relevant * 2; i++) {
-        segment* wall = &relevant_walls[i/2];
-        vec2 reference_vec = cone_l.v; 
-        vec2 point_vec = i % 2 == 0 ? wall->u : wall->v;
-        point_vec = sub(point_vec, p);
-        float theta = acos(dot(point_vec, reference_vec) / (magnitude(point_vec) * magnitude(reference_vec)));
+    dll* root = NULL;
+    dll* curs = NULL;
 
-        endpoint* point = (endpoint*) malloc(sizeof(endpoint));
-        *point = (endpoint) {wall, NULL, i % 2 == 1, theta};
+    float pa_rads = pa * PI / 180;
+    vec2 reference_vec = {cosf(pa_rads), sinf(pa_rads)};
+    for (int i = 0; i < num_relevant; i++) {
+        segment* wall = &relevant_walls[i];
+        
+        vec2 point_vec = sub(wall->u, p);
+        float theta_u = atan2f(cross(reference_vec, point_vec), dot(point_vec, reference_vec));
 
-        if (!root) {
-            root = point;
-            curs = point;
-            continue;
+        point_vec = sub(wall->v, p);
+        float theta_v = atan2f(cross(reference_vec, point_vec), dot(point_vec, reference_vec));
+
+        // segment su = {p, {p.x + DOV * osf(pa_rads + theta_u), p.y + DOV * sinf(pa_rads + theta_u)}};
+        // segment sv = {p, {p.x + DOV * cosf(pa_rads + theta_v), p.y + DOV * sinf(pa_rads + theta_v)}};
+
+        // bresenham_line(su, 50);
+        // bresenham_line(sv, 50);
+
+        // Sort endpoints by angle, left to right across the FOV
+        endpoint* u_point = (endpoint*) malloc(sizeof(endpoint));
+        *u_point = (endpoint) {wall, NULL, theta_u > theta_v};
+
+
+        dll* u_node = (dll*) malloc(sizeof(dll));
+        *u_node = (dll) {u_point, NULL, NULL, theta_u};
+        if (curs) {
+            curs->next = u_node;
+            u_node->prev = curs;
+            curs = curs->next;
+        } else {
+            curs = u_node;
+            root = u_node;
         }
-
-        curs->next = point;
+        
+        endpoint* v_point = (endpoint*) malloc(sizeof(endpoint));
+        *v_point = (endpoint) {wall, u_node, theta_u <= theta_v};
+        
+        
+        dll* v_node = (dll*) malloc(sizeof(dll));
+        *v_node = (dll) {v_point, NULL, curs, theta_v};
+        u_point->adjacent = v_node;
+        curs->next = v_node;
+        v_node->prev = curs;
         curs = curs->next;
     }
+
+    #ifdef RENDER_DEBUG
+        render_debug(relevant_walls, num_relevant, cone_l, cone_r);
+    #endif
     
-    root = merge_sort_endpoints(root);
+    root = merge_sort_dll(root);
+    dll* sweep_curs = root;
+    segment* closest_wall = NULL;
+
+    // print_dll(root);
 
     // Skips every second raycast on walls for performance
     for (int i = 0; i < SCREEN_WIDTH; i += 2) {
-        float ray_angle = (i * FOV / SCREEN_WIDTH) - (FOV / 2);
+        float ray_angle = (pa + (i * FOV / SCREEN_WIDTH) - (FOV / 2)) * PI / 180;
         
-        ray.v.x = cosf((pa + ray_angle) * PI / 180);
-        ray.v.y = sinf((pa + ray_angle) * PI / 180);
+        ray.v.x = cosf(ray_angle);
+        ray.v.y = sinf(ray_angle);
         ray.v = norm(ray.v);
         
-        segment* closest_wall = NULL;
-        depth_buf_info info = {MAX_VIEW_DIST, 0, 0, 0};
-        
-        // Checks if the ray from the camera intersects any walls
-        for (int j = 0; j < num_relevant; j++) {
-            bool hit = false;
-            float dist = raycast(ray.u, ray.v, relevant_walls[j], &hit);
-            if (!hit) continue;
+        float theta = atan2f(cross(reference_vec, ray.v), dot(reference_vec, ray.v));
+        // printf("i: %d/%d\n", i, SCREEN_WIDTH);
+        float closest_distance = -1.0;
+
+        while (sweep_curs && sweep_curs->sorting_factor < theta) {
+
+            endpoint* data = (endpoint*) sweep_curs->data;
             
-            // Checks if the intersected wall is the closest to the camera
-            if (dist < info.depth) {
-                info.depth = dist;
-                closest_wall = &relevant_walls[j];
+            // printf("theta: %f > %f | cursor: (%f, %f) -- (%f, %f) is_end: %d\n", theta, sweep_curs->sorting_factor, data->segment->u.x, data->segment->u.y, data->segment->v.x, data->segment->v.y, data->is_end);
+            // fflush(stdout);
+            
+            // Remove endpoints from "active" list behind cursor when they end
+            if (data->is_end) {
+
+                // printf("removing wall %f - %f\nList is now:\n", sweep_curs->sorting_factor, ((endpoint*) sweep_curs->data)->adjacent->sorting_factor);
+                if (closest_wall == data->segment) {
+                    closest_wall = NULL;
+                }
+
+                dll* next = data->adjacent->next;
+                dll* prev = data->adjacent->prev;
+
+                if (next) next->prev = prev;
+                if (prev) prev->next = next;
+                else root = next;
+
+                free(data->adjacent->data);
+                free(data->adjacent);
+
+                next = sweep_curs->next;
+                prev = sweep_curs->prev;
+
+                if (next) next->prev = prev;
+                if (prev) prev->next = next;
+
+                if (!next && !prev) root = NULL;
+
+                free(sweep_curs->data);
+                free(sweep_curs);
+
+                sweep_curs = next;
+
+                // print_dll(root);
+
+            } else {
+
+                if (closest_wall) {
+                    bool hit = false;
+                    float hit_distance_new = raycast(ray.u, ray.v, *(data->segment), &hit);
+                    if (hit) {
+                        float hit_distance_current = raycast(ray.u, ray.v, *closest_wall, &hit);
+                        // printf("wall hit! distance was %f, old was %f\n", hit_distance_new, hit_distance_current);
+                        if (hit_distance_new < hit_distance_current) {
+                            closest_wall = data->segment;
+                            closest_distance = hit_distance_new;
+                            // printf("Updated closest wall to (%f, %f) -- (%f, %f) | %f < %f\n", closest_wall->u.x, closest_wall->u.y, closest_wall->v.x, closest_wall->v.y, hit_distance_new, hit_distance_current);
+                        }
+                    }
+                }
+
+                sweep_curs = sweep_curs->next;
             }
         }
+
+        if (!closest_wall) {
+
+            // printf("\nFinding wall\n");
+            // fflush(stdout);
+            // Find the closest wall from the "Active" segment list behind the sweep cursor.
+            // As segments are non-intersecting, we can reuse this until a segment ends or starts. 
+            curs = root;
+            while (curs && curs != sweep_curs) {
+                endpoint* e = (endpoint*) curs->data;
+                segment* s = e->segment;
+                curs = curs->next;
+                bool hit = false;
+                float hit_distance = raycast(ray.u, ray.v, *s, &hit);
+                // printf("distance %f\n", hit_distance);
+                // fflush(stdout);
+                if (!hit) continue;
+                
+                if (closest_distance < 0 || hit_distance < closest_distance) {
+                    closest_distance = hit_distance;
+                    closest_wall = s;
+                }
+            }
+
+            // if (closest_wall) {
+            //     printf("Found wall (%f, %f) -- (%f, %f)\n", closest_wall->u.x, closest_wall->u.y, closest_wall->v.y, closest_wall->v.y);
+            // }
+        }
+        
+        depth_buf_info info = {MAX_VIEW_DIST, 0, 0, 0};
         
         // If ray hit a wall
         if (closest_wall) {
+
+            // use precomputed value from getting closest wall if available
+            if (closest_distance < 0) {
+                bool hit = false;
+                closest_distance = raycast(ray.u, ray.v, *closest_wall, &hit);
+                if (!hit) printf("Did not hit :(((((\n");
+            }
+
+            info.depth = closest_distance;
+
             // Draws lines at the edges of walls
             vec2 hit_pt = { ray.u.x + ray.v.x * info.depth, ray.u.y + ray.v.y * info.depth };
             int wall_len = 1 / inv_sqrt(dist2(closest_wall->u, closest_wall->v));
@@ -435,34 +583,40 @@ void render_map(vec2 p, int pa, bool is_shooting) {
             info.length = 1000 / info.depth;
             switch (closest_wall->tex) {
                 case CHECK:
-                if (wall2pt < 2 || wall2pt > wall_len - 2) {
-                    vertical_line(i, info.length, 1, 2);
+                    if (wall2pt < 2 || wall2pt > wall_len - 2) {
+                        vertical_line(i, info.length, 1, 2);
+                        
+                    } else {
+                        info.is_checked = true;
+                        check_line(i, info.length, info.phase);
+                    }
                     
-                } else {
-                    info.is_checked = true;
-                    check_line(i, info.length, info.phase);
-                }
-                
-                break;
+                    break;
                 
                 case DOOR:
-                vertical_line(i, info.length, 1, 1);
-                break;
-                
+                    vertical_line(i, info.length, 1, 1);
+                    break;
             }
         }
         
-        depth_buf[i] = (depth_buf_info) {info.depth, info.phase, info.length, info.is_checked};
+        depth_buf[i] = info;
         depth_buf[i+1] = depth_buf[i];
     }
+
+    // dealloc segment list
+    while (root) {
+        dll* val = root;
+        root = root->next;
+        free(val->data);
+        free(val);
+    }
+    
+    free(relevant_walls);
     
     #ifdef RENDER_DEBUG
-        render_debug(relevant_walls, num_relevant, cone_l, cone_r);
-        free(relevant_walls);
         return;
     #endif
 
-    free(relevant_walls);
     vec2 mid_vec = { p.x + cosf(pa * PI / 180), p.y + sinf(pa * PI / 180) };
     for (int i = 0; i < NUM_ENEMIES; i++) {
         enemy e = enemies[i];
@@ -844,7 +998,11 @@ void render_debug(segment* relevant_walls, int n, segment cone_l, segment cone_r
     oled_write_pixel(p.x + offset, p.y + offset, 1);
     
     bresenham_line(cone_l, offset);
+    bresenham_line(cone_l, offset+1);
+    bresenham_line(cone_l, offset-1);
     bresenham_line(cone_r, offset);
+    bresenham_line(cone_r, offset+1);
+    bresenham_line(cone_r, offset-1);
     
     for (int i = 0; i < NUM_ENEMIES; i++)
     {
