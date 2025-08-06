@@ -32,21 +32,22 @@
 
 #define PI                    3.14159
 #define START_TIME_MILLI      4000
-#define TARGET_FPS            36
-#define FRAME_TIME_MILLI      1000 / TARGET_FPS
+#define TARGET_FPS            20
 
 #define WALL_COLLISION_DIST   5
 #define ENEMY_VISION_RANGE    100
 #define ENEMY_WALK_SPEED      1
 #define ROTATION_SPEED        5
 #define WALK_SPEED            4
+
+// RENDERING
 #define DOV                   400.0f
 #define FOV                   80.0f
 #define MAX_VIEW_DIST         100000.0f
 #define UI_HEIGHT             54
+
+// MAP GEN
 #define WALL_OFFSET           27
-#define GUN_X                 SCREEN_WIDTH / 2
-#define GUN_Y                 UI_HEIGHT
 #define MIN_ROOM_WIDTH        20
 #define MAP_GEN_REC_DEPTH     4
 #define MAP_WIDTH             300
@@ -54,6 +55,11 @@
 #define DOOR_WIDTH            20
 #define DOOR_IDX              0
 
+static const float ROTATION_SPEED_RADS  = ROTATION_SPEED * PI / 180.0f;
+static const float FOV_RADS             = FOV * PI / 180.0f;
+static const float FRAME_TIME_MILLI     = 1000 / TARGET_FPS;
+static const int GUN_X                  = SCREEN_WIDTH / 2;
+static const int GUN_Y                  = UI_HEIGHT;
 // Represents a place in 2D space
 typedef struct vec2 {
   float x, y;
@@ -61,7 +67,8 @@ typedef struct vec2 {
 
 typedef enum wall_tex {
   CHECK,
-  DOOR
+  LINES,
+  DOOR,
 } wall_tex;
 
 // A line segment or ray
@@ -331,9 +338,20 @@ static const sprite imp_sprite_hurt_2 = {
   IMP_HEIGHT
 };
 
-static const sprite imp_hurt_sheet[] = {imp_sprite_hurt_1, imp_sprite_hurt_2};
+typedef struct endpoint {
+    segment* segment;
+    struct dll* adjacent;
+    bool is_end;
+} endpoint;
 
-#define FRAME_BUFFER_LENGTH ((SCREEN_WIDTH * UI_HEIGHT) / 8)//sizeof(uint8_t))
+typedef struct dll {
+    void* data;
+    struct dll* next;
+    struct dll* prev;
+    float sorting_factor;
+} dll;
+
+static const sprite imp_hurt_sheet[] = {imp_sprite_hurt_1, imp_sprite_hurt_2};
 
 float pow2(float x);
 
@@ -355,7 +373,7 @@ void draw_gun(bool moving, bool show_flash);
 
 void doom_update(controls c);
 
-void render_map(vec2 p, int pa, bool is_shooting);
+void render_map(vec2 p, float pa, bool is_shooting);
 
 float raycast(vec2 ray_origin, vec2 ray_direction, segment s, bool* hit);
 
@@ -383,9 +401,10 @@ const char* get_u32_str(uint32_t value, char pad);
 
 segment* bsp_wallgen(segment* walls, int* num_walls, int l, int r, int t, int b, int depth);
 
-void render_debug(segment* relevant_walls, int n, segment cone_l, segment cone_r);
 
 #ifdef RENDER_DEBUG
+  void render_debug(dll* root, segment cone_l, segment cone_r);
+  
   void bresenham_line(segment s, int offset);
 #endif
 
